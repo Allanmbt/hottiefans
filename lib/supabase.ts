@@ -54,8 +54,8 @@ export type Girl = {
     height: number;
     bwh: string;
     zhaobei: string;
-    boobs: string;
-    complexion: number;
+    boobs: string | number;
+    complexion: string | number;
     language: LocalizedText;
     badge: string;
     profile: string;

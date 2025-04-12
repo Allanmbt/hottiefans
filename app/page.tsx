@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChevronDown, Filter, MapPin, SlidersHorizontal } from 'lucide-react';
 import { getCategories, getGirls } from '@/lib/api';
 import { Category, Girl } from '@/lib/supabase';
+import { useRouter, usePathname } from 'next/navigation';
 
 // 默认服务分类（fallback）
 const defaultServiceCategories: Category[] = [
@@ -43,21 +44,38 @@ const sortOptions = [
 // 每页显示的数量
 const PAGE_SIZE = 8;
 
+// 用于保存页面状态的全局变量
+let savedState = {
+  girls: [] as Girl[],
+  page: 1,
+  hasMore: true,
+  serviceCategory: '0',
+  locationCategory: '0',
+  sortOption: 'recommended',
+  scrollPosition: 0,
+  serviceCategories: [] as Category[],
+  initialized: false
+};
+
 export default function Home() {
-  const [girls, setGirls] = useState<Girl[]>([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [serviceCategories, setServiceCategories] = useState<Category[]>([
-    { id: 0, name_zh: '全部', name_en: 'All', created_at: '' }
-  ]);
+  const [girls, setGirls] = useState<Girl[]>(savedState.girls);
+  const [page, setPage] = useState(savedState.page);
+  const [loading, setLoading] = useState(!savedState.initialized);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(!savedState.initialized);
+  const [hasMore, setHasMore] = useState(savedState.hasMore);
+  const [serviceCategories, setServiceCategories] = useState<Category[]>(
+    savedState.serviceCategories.length > 0 
+      ? savedState.serviceCategories 
+      : [{ id: 0, name_zh: '全部', name_en: 'All', created_at: '' }]
+  );
   const [totalCount, setTotalCount] = useState(0);
+  const [firstLoad, setFirstLoad] = useState(!savedState.initialized);
 
   // 筛选和排序状态
-  const [serviceCategory, setServiceCategory] = useState('0');
-  const [locationCategory, setLocationCategory] = useState('0');
-  const [sortOption, setSortOption] = useState('recommended');
+  const [serviceCategory, setServiceCategory] = useState(savedState.serviceCategory);
+  const [locationCategory, setLocationCategory] = useState(savedState.locationCategory);
+  const [sortOption, setSortOption] = useState(savedState.sortOption);
 
   // 用于检测是否触底
   const { ref: bottomRef, inView: bottomInView } = useInView({
@@ -65,8 +83,35 @@ export default function Home() {
     triggerOnce: false,
   });
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // 保存当前状态
+  const saveCurrentState = () => {
+    savedState = {
+      girls,
+      page,
+      hasMore,
+      serviceCategory,
+      locationCategory,
+      sortOption,
+      scrollPosition: window.scrollY,
+      serviceCategories,
+      initialized: true
+    };
+  };
+
   // 初始化加载分类数据
   useEffect(() => {
+    // 如果有保存的状态且不是首次加载，则恢复滚动位置
+    if (savedState.initialized && savedState.girls.length > 0) {
+      setTimeout(() => {
+        window.scrollTo(0, savedState.scrollPosition);
+      }, 0);
+      return;
+    }
+
     async function fetchCategories() {
       try {
         const categoriesData = await getCategories();
@@ -77,22 +122,53 @@ export default function Home() {
             ...categoriesData
           ];
           setServiceCategories(allCategories);
+          savedState.serviceCategories = allCategories;
         } else {
           // 无数据或出错时使用默认分类
           setServiceCategories(defaultServiceCategories);
+          savedState.serviceCategories = defaultServiceCategories;
         }
       } catch (error) {
         console.error('无法加载分类数据:', error);
         setServiceCategories(defaultServiceCategories);
+        savedState.serviceCategories = defaultServiceCategories;
       }
     }
 
     fetchCategories();
-  }, []);
+  }, [pathname]);
 
   // 初始加载女孩数据
   useEffect(() => {
-    loadGirls(1, true);
+    if (savedState.initialized && savedState.girls.length > 0) {
+      return;
+    }
+
+    if (firstLoad) {
+      loadGirls(1, true);
+      setFirstLoad(false);
+    } else {
+      // 后续筛选变更时只显示局部加载状态
+      loadGirls(1, true, false);
+    }
+  }, [serviceCategory, locationCategory, sortOption, firstLoad]);
+
+  // 监听筛选条件变化，强制重新加载数据
+  useEffect(() => {
+    // 如果是首次加载，跳过这个effect，让上面的初始加载逻辑处理
+    if (firstLoad) return;
+    
+    // 标记加载状态
+    setFilterLoading(true);
+    
+    // 重置页码并加载新数据
+    setPage(1);
+    loadGirls(1, true, false);
+    
+    // 保存当前筛选条件到savedState
+    savedState.serviceCategory = serviceCategory;
+    savedState.locationCategory = locationCategory;
+    savedState.sortOption = sortOption;
   }, [serviceCategory, locationCategory, sortOption]);
 
   // 监听触底事件加载更多数据
@@ -102,27 +178,44 @@ export default function Home() {
     }
   }, [bottomInView, loading, hasMore]);
 
+  // 保存状态
+  useEffect(() => {
+    // 监听离开页面事件
+    const handleBeforeUnload = () => {
+      saveCurrentState();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // 添加路由变更监听
+    const handleRouteChange = () => {
+      saveCurrentState();
+    };
+    
+    // 清理函数
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleRouteChange();
+    };
+  }, [girls, page, hasMore, serviceCategory, locationCategory, sortOption]);
+
   // 加载女孩数据
-  const loadGirls = async (pageNum: number, isNewFilter = false) => {
-    if (loading && !isNewFilter) return;
+  const loadGirls = async (pageNum: number, isNewFilter = false, isInitialLoad = true) => {
+    if ((loading && !isNewFilter) || (filterLoading && !isNewFilter)) return;
 
     try {
       setLoading(true);
       if (isNewFilter) {
-        setInitialLoading(true);
+        if (isInitialLoad) {
+          setInitialLoading(true);
+        } else {
+          setFilterLoading(true);
+        }
         setPage(1);
       }
 
       const categoryId = parseInt(serviceCategory);
       const cityId = parseInt(locationCategory);
-
-      console.log('Fetching girls with params:', {
-        categoryId: categoryId === 0 ? undefined : categoryId,
-        cityId,
-        page: pageNum,
-        limit: PAGE_SIZE,
-        sortBy: sortOption
-      });
 
       const girlsData = await getGirls({
         categoryId: categoryId === 0 ? undefined : categoryId,
@@ -145,7 +238,11 @@ export default function Home() {
       console.error('加载女孩数据失败:', error);
     } finally {
       if (isNewFilter) {
-        setInitialLoading(false);
+        if (isInitialLoad) {
+          setInitialLoading(false);
+        } else {
+          setFilterLoading(false);
+        }
       }
       setLoading(false);
     }
@@ -162,7 +259,9 @@ export default function Home() {
   // 处理技师卡片点击
   const handleGirlClick = (id: string) => {
     console.log(`Navigate to girl profile: ${id}`);
-    // 这里可以添加导航逻辑
+    // 保存当前状态
+    saveCurrentState();
+    router.push(`/girls/${id}`);
   };
 
   // 返回当前所选地区名称
@@ -177,14 +276,17 @@ export default function Home() {
     return sort ? sort.name : '推荐';
   };
 
+  // 阻止首次加载动画
+  const shouldAnimate = !savedState.initialized;
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen" ref={mainContentRef}>
       {/* 主要内容区域 */}
       <main className="flex-1">
         <div className="container px-4 py-6 sm:py-8 md:py-10">
-          {/* 页面标题 */}
+          {/* 页面标题 - 已有数据时不显示动画 */}
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={shouldAnimate ? { opacity: 0, y: -10 } : { opacity: 1, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="mb-5"
@@ -193,10 +295,10 @@ export default function Home() {
             <p className="text-muted-foreground">探索我们精选的女孩，找到你的完美陪伴</p>
           </motion.div>
 
-          {/* 分类筛选区域 */}
-          {!initialLoading && (
+          {/* 分类筛选区域 - 已有数据时不显示动画 */}
+          {(!initialLoading || savedState.initialized) && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={shouldAnimate ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               className="mb-6 space-y-3"
@@ -204,7 +306,6 @@ export default function Home() {
               {/* 服务分类 */}
               <div className="overflow-x-auto no-scrollbar">
                 <Tabs
-                  defaultValue="0"
                   value={serviceCategory}
                   onValueChange={setServiceCategory}
                   className="w-full"
@@ -309,17 +410,25 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* 骨架屏加载状态 */}
-          {initialLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {Array(8).fill(null).map((_, index) => (
-                <CardSkeleton key={index} />
-              ))}
-            </div>
-          ) : (
-            <AnimatePresence mode="popLayout">
-              {/* 技师列表 - 响应式布局 */}
-              {girls.length > 0 ? (
+          {/* 技师列表区域 */}
+          <AnimatePresence mode="popLayout">
+            {/* 首次加载的骨架屏 */}
+            {initialLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                {Array(8).fill(null).map((_, index) => (
+                  <CardSkeleton key={index} />
+                ))}
+              </div>
+            ) : filterLoading ? (
+              /* 筛选变更时的局部骨架屏 */
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                {Array(8).fill(null).map((_, index) => (
+                  <CardSkeleton key={index} />
+                ))}
+              </div>
+            ) : (
+              /* 技师列表 - 响应式布局 */
+              girls.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                   {girls.map((girl, index) => (
                     <motion.div
@@ -343,19 +452,19 @@ export default function Home() {
                 <div className="text-center py-20">
                   <p className="text-lg text-muted-foreground">暂无符合条件的女孩</p>
                 </div>
-              )}
-            </AnimatePresence>
-          )}
+              )
+            )}
+          </AnimatePresence>
 
           {/* 底部加载更多指示器 */}
           <div className="mt-8 flex justify-center" ref={bottomRef}>
-            {loading && !initialLoading && (
+            {loading && !initialLoading && !filterLoading && (
               <LoadingIndicator />
             )}
           </div>
 
           {/* 没有更多数据提示 */}
-          {!hasMore && !initialLoading && girls.length > 0 && (
+          {!hasMore && !initialLoading && !filterLoading && girls.length > 0 && (
             <div className="mt-8 text-center text-muted-foreground">
               没有更多女孩了
             </div>

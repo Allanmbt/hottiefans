@@ -6,18 +6,17 @@ import { usePathname } from 'next/navigation';
 import {
     HeadphonesIcon,
     Globe,
-    X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Image from 'next/image';
 import { Logo } from '@/components/Logo';
+import { CustomerServiceDialog } from './CustomerServiceDialog';
 
 const languages = [
     { code: 'zh', name: '中文' },
@@ -122,96 +121,10 @@ export function Navbar() {
             </header>
 
             {/* 客服联系弹出层 */}
-            <AnimatePresence>
-                {isCustomerServiceOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-[#1D1C19]/80 backdrop-blur-sm z-50 flex items-center justify-center"
-                        onClick={() => setIsCustomerServiceOpen(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            transition={{ type: "spring", bounce: 0.3 }}
-                            className="bg-[#1D1C19] p-6 rounded-2xl w-[320px] relative"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <button
-                                className="absolute right-4 top-4 text-gray-400 hover:text-white"
-                                onClick={() => setIsCustomerServiceOpen(false)}
-                            >
-                                <X size={24} />
-                            </button>
-
-                            <h3 className="text-center text-xl font-medium mb-6 text-white">联系客服</h3>
-
-                            <div className="flex justify-center items-center gap-4 py-4">
-                                {/* Telegram */}
-                                <a
-                                    href="https://t.me/hottiefans"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[#1D1C19] p-3 rounded-full hover:bg-[#2C2B28] transition-colors flex flex-col items-center"
-                                >
-                                    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2">
-                                        <Image
-                                            src="/images/telegram.png"
-                                            alt="Telegram"
-                                            width={54}
-                                            height={54}
-                                        />
-                                    </div>
-                                    <span className="text-sm text-gray-300">Telegram</span>
-                                </a>
-
-                                {/* LINE */}
-                                <a
-                                    href="https://lin.ee/TO6x9Zx"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[#1D1C19] p-3 rounded-full hover:bg-[#2C2B28] transition-colors flex flex-col items-center"
-                                >
-                                    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2">
-                                        <Image
-                                            src="/images/line.png"
-                                            alt="LINE"
-                                            width={54}
-                                            height={54}
-                                        />
-                                    </div>
-                                    <span className="text-sm text-gray-300">LINE</span>
-                                </a>
-
-                                {/* WhatsApp */}
-                                <a
-                                    href="https://wa.me/message/I3J36BHF5FI7I1"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[#1D1C19] p-3 rounded-full hover:bg-[#2C2B28] transition-colors flex flex-col items-center"
-                                >
-                                    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2">
-                                        <Image
-                                            src="/images/whatsapp.png"
-                                            alt="WhatsApp"
-                                            width={54}
-                                            height={54}
-                                        />
-                                    </div>
-                                    <span className="text-sm text-gray-300">WhatsApp</span>
-                                </a>
-                            </div>
-
-                            <p className="text-center text-gray-400 text-sm mt-4">
-                                联系我们会优先处理您的需求
-                            </p>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <CustomerServiceDialog 
+                isOpen={isCustomerServiceOpen} 
+                onClose={() => setIsCustomerServiceOpen(false)}
+            />
 
             {/* 防止内容被导航栏遮挡的间隔 */}
             <div className="h-16"></div>
