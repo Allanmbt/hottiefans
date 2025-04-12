@@ -1,0 +1,378 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 亮色模式 */
+    --background: 0 0% 100%;
+    --foreground: 40 8% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 40 8% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 40 8% 11%;
+    --primary: 43 100% 50%;
+    --primary-foreground: 40 8% 11%;
+    --secondary: 40 3% 76%;
+    --secondary-foreground: 40 8% 11%;
+    --muted: 40 3% 76%;
+    --muted-foreground: 40 4% 42%;
+    --accent: 43 100% 50%;
+    --accent-foreground: 40 8% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 40 5% 85%;
+    --input: 40 5% 85%;
+    --ring: 43 100% 50%;
+    --radius: 0.75rem;
+    --brand: 43 100% 50%;
+    --brand-light: 43 100% 60%;
+    --brand-dark: 43 80% 40%;
+  }
+
+  .dark {
+    /* 暗色模式（默认） */
+    --background: 40 8% 11%;
+    --foreground: 0 0% 100%;
+    --card: 40 8% 11%;
+    --card-foreground: 0 0% 100%;
+    --popover: 40 8% 11%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 43 100% 50%;
+    --primary-foreground: 40 8% 11%;
+    --secondary: 40 5% 38%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 40 5% 38%;
+    --muted-foreground: 40 6% 76%;
+    --accent: 43 100% 50%;
+    --accent-foreground: 40 8% 11%;
+    --destructive: 0 82.8% 60.6%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 40 5% 38%;
+    --input: 40 5% 38%;
+    --ring: 43 100% 50%;
+    --brand: 43 100% 50%;
+    --brand-light: 43 100% 60%;
+    --brand-dark: 43 80% 40%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
+  /* 设置默认为暗黑模式 */
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/* 隐藏滚动条但保持可滚动功能 */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+}
+
+/* 导航菜单样式 */
+.nav-link {
+  @apply relative px-3 py-2 transition-colors dark:text-gray-300 text-gray-700;
+}
+
+.nav-link::after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-0 h-0.5 bg-brand transition-all duration-300;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  @apply w-full;
+}
+
+.nav-link:hover {
+  @apply dark:text-white text-black;
+}
+
+.nav-link.active {
+  @apply font-bold;
+  @apply text-brand;
+}
+
+/* 响应式导航 */
+.mobile-menu {
+  @apply fixed inset-0 bg-background z-50 flex flex-col items-center justify-center overflow-hidden p-6;
+  transition: transform 0.3s ease-in-out;
+}
+
+.mobile-menu.open {
+  transform: translateX(0);
+}
+
+.mobile-menu.closed {
+  transform: translateX(100%);
+}
+
+.mobile-menu .nav-link {
+  @apply text-xl py-4 text-white hover:text-brand;
+}
+
+.mobile-menu .nav-link.active {
+  @apply text-brand;
+}
+
+/* 面包屑样式 */
+.breadcrumb-item {
+  @apply text-muted-foreground hover:text-foreground;
+}
+
+.breadcrumb-item.active {
+  color: #FFB900;
+}
+
+.breadcrumb-item.text-brand {
+  color: #FFB900;
+}
+
+.breadcrumb-separator {
+  @apply mx-2 text-muted-foreground;
+}
+
+/* 确保页面宽度不因滚动条显示/隐藏而改变 */
+html {
+  scrollbar-gutter: stable both-edges;
+  overflow-y: scroll;
+}
+
+/* 下拉菜单样式优化 */
+.select-content {
+  background-color: hsl(var(--background)) !important;
+  border-color: #FFB900 !important;
+  border-width: 1px !important;
+}
+
+/* 通用下拉框修复 */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+[data-radix-select-content] {
+  overflow-y: auto !important;
+  max-height: 300px !important;
+}
+
+/* 确保下拉项可点击 */
+[data-radix-select-content] [role="option"] {
+  cursor: pointer !important;
+}
+
+/* 强制启用移动端下拉触摸事件 */
+@media (max-width: 768px) {
+
+  [data-radix-select-trigger],
+  [data-radix-select-content] [role="option"] {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* 解决iOS Safari特定问题 */
+  select,
+  button,
+  [role="button"],
+  [role="option"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+
+  /* 提高下拉框的触摸点击区域 */
+  [data-radix-select-trigger] {
+    min-height: 42px !important;
+    padding: 8px 12px !important;
+  }
+}
+
+/* 滚动条样式美化 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 185, 0, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 185, 0, 0.5);
+}
+
+/* 品牌色边框样式 */
+.brand-border {
+  border-color: #FFB900 !important;
+}
+
+/* 品牌色按钮样式补充 */
+.brand-button-gradient {
+  background: linear-gradient(to right, #FFB900, #FFC940);
+  color: #1D1C19;
+  transition: all 0.3s ease;
+}
+
+.brand-button-gradient:hover {
+  background: linear-gradient(to right, #FFA500, #FFB900);
+  box-shadow: 0 4px 12px rgba(255, 185, 0, 0.25);
+}
+
+/* 自定义Select下拉框样式 */
+.select-content [data-radix-select-viewport] {
+  background-color: hsl(var(--background)) !important;
+  padding: 0;
+}
+
+.select-content [role="option"] {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 确保滚动容器内部也有一致的滚动行为 */
+.scroll-container {
+  scrollbar-gutter: stable;
+}
+
+/* 给导航链接添加悬停效果 */
+.nav-link {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* RingProgress样式 */
+.ring-progress-circle {
+  transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+/* 按钮悬停放大 */
+.button-hover-scale {
+  transition: all 0.2s ease;
+}
+
+/* 添加特定的therapist-card-wrapper样式防止下拉框影响 */
+.therapist-card-wrapper {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* 修复卡片中图片可能被拉伸的问题 */
+.aspect-\[3\/4\] {
+  contain: layout;
+  position: relative !important;
+  overflow: hidden !important;
+  aspect-ratio: 3/4 !important;
+  will-change: transform;
+}
+
+.aspect-\[3\/4\] img {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-position: center !important;
+}
+
+/* 修复下拉菜单和卡片冲突问题 */
+.therapists-grid {
+  isolation: isolate;
+  position: relative;
+  z-index: 1;
+  transform: translateZ(0);
+}
+
+.therapists-grid>* {
+  isolation: isolate;
+  position: relative;
+  z-index: 1;
+}
+
+/* 调整卡片样式，确保内容可见 */
+.therapist-card-wrapper>* {
+  isolation: isolate;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.sort-filter-container {
+  position: relative;
+  z-index: 50;
+}
+
+/* 优化Radix UI Popover */
+[data-state="open"] [role="dialog"] {
+  z-index: 99999 !important;
+}
+
+/* 修复移动端下拉框样式冲突 */
+@media (max-width: 768px) {
+
+  /* 确保下拉框触发器可以正常工作 */
+  .sort-filter-container [data-radix-select-trigger] {
+    position: relative !important;
+    z-index: 10 !important;
+    cursor: pointer !important;
+  }
+
+  /* 确保下拉框可以正常显示在选择器下方，而不是屏幕底部 */
+  [data-radix-popper-content-wrapper] {
+    position: absolute !important;
+    z-index: 9999 !important;
+    width: var(--radix-popper-anchor-width) !important;
+  }
+
+  /* 防止治疗师卡片容器受下拉框影响 */
+  .therapist-card-wrapper {
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  /* 修复移动端图片显示问题 */
+  .aspect-\[3\/4\] {
+    position: relative !important;
+    aspect-ratio: 3/4 !important;
+  }
+
+  /* 避免图片拉伸 */
+  .aspect-\[3\/4\] img {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  /* 移动端排序筛选容器调整 */
+  .sort-filter-container {
+    position: relative !important;
+    z-index: 10 !important;
+    margin-bottom: 20px !important;
+  }
+}
+
+/* 删除移除底部弹出动画 */
+.select-overlay {
+  display: none;
+}
