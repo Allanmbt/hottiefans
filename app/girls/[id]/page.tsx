@@ -36,24 +36,51 @@ async function getGirlById(id: string): Promise<Girl | null> {
       return null;
     }
 
-    // 更新浏览量
-    const newBrowserCount = (data.browser_count || 0) + 1;
-    const { error: updateError } = await supabase
-      .from('girls')
-      .update({ browser_count: newBrowserCount })
-      .eq('id', id);
-
-    if (updateError) {
-      console.error('Error updating browser count:', updateError);
-    } else {
-      // 更新本地数据
-      data.browser_count = newBrowserCount;
-    }
-
+    // 处理浏览量更新 - 使用本地存储防止短时间内重复计数
+    await handleBrowserCountUpdate(id, data);
+    
     return data;
   } catch (error) {
     console.error('Failed to fetch girl data:', error);
     return null;
+  }
+}
+
+// 处理浏览量更新的函数 - 使用本地存储控制更新频率
+async function handleBrowserCountUpdate(id: string, data: Girl): Promise<void> {
+  // 如果在服务器端渲染，直接返回
+  if (typeof window === 'undefined') return;
+  
+  try {
+    // 从localStorage获取访问记录
+    const viewsKey = 'hottiefans_viewed_girls';
+    const viewsJson = localStorage.getItem(viewsKey) || '{}';
+    const viewedGirls: Record<string, number> = JSON.parse(viewsJson);
+    
+    const now = Date.now();
+    const thirtyMinutesInMs = 30 * 60 * 1000;
+    
+    // 检查是否在30分钟内已经查看过
+    if (viewedGirls[id] && (now - viewedGirls[id] < thirtyMinutesInMs)) {
+      // 30分钟内已查看过，不增加浏览量
+      return;
+    }
+    
+    // 更新最后查看时间
+    viewedGirls[id] = now;
+    localStorage.setItem(viewsKey, JSON.stringify(viewedGirls));
+    
+    // 调用数据库函数增加浏览量
+    const { error } = await supabase.rpc('increment_browser_count', { girl_id: id });
+    
+    if (error) {
+      console.error('浏览量更新失败:', error);
+    } else {
+      // 更新本地显示的数值，提供即时反馈
+      data.browser_count = (data.browser_count || 0) + 1;
+    }
+  } catch (error) {
+    console.error('浏览量更新过程中出错:', error);
   }
 }
 
@@ -247,6 +274,7 @@ export default function GirlDetailPage({ params }: { params: { id: string } }) {
             <div className="flex items-center gap-1">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
               <span className="font-medium">4.9</span>
+              <span className="ml-2 text-xs text-gray-400">浏览: {girl.browser_count || 0}</span>
             </div>
           </div>
 
@@ -362,7 +390,7 @@ export default function GirlDetailPage({ params }: { params: { id: string } }) {
                 <div>
                   <h3 className="font-semibold mb-3">🔹 如何预订</h3>
                   <p className="text-muted-foreground">
-                    请联系我们的客服，提供您选择的服务项目和预定时间，客服会为您安排。
+                    请联系我们的客服，提供您所选女孩、服务和预定时间，客服会为您安排。
                   </p>
                 </div>
                 <Separator />
@@ -376,14 +404,14 @@ export default function GirlDetailPage({ params }: { params: { id: string } }) {
                 <div>
                   <h3 className="font-semibold mb-3">🔹 支付方式</h3>
                   <p className="text-muted-foreground">
-                    我们接受现金支付，预约时需支付订金，到达后支付剩余款项。
+                    支付定金后，待Hottie Girl抵达结清尾款即可。
                   </p>
                 </div>
                 <Separator />
                 <div>
                   <h3 className="font-semibold mb-3">🔹 取消政策</h3>
                   <p className="text-muted-foreground">
-                    如需取消，请提前2小时通知，否则订金将不予退还。
+                    Hottie Girl抵达后取消将扣除定金1000，剩余返还余额。
                   </p>
                 </div>
                 
