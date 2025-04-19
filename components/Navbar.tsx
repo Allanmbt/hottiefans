@@ -8,7 +8,6 @@ import {
     Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,19 +16,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from '@/components/Logo';
 import { CustomerServiceDialog } from './CustomerServiceDialog';
+import { useToast } from "@/components/ui/use-toast";
 
 const languages = [
     { code: 'zh', name: '中文' },
     { code: 'en', name: 'English' },
-    { code: 'ja', name: '日本語' },
-    { code: 'ko', name: '한국어' },
 ];
+
+// 多语言提示消息
+const comingSoonMessages = {
+    en: "Coming soon"
+};
 
 export function Navbar() {
     const pathname = usePathname();
     const [isScrolled, setIsScrolled] = useState(true);
     const [isCustomerServiceOpen, setIsCustomerServiceOpen] = useState(false);
     const [currentLanguage, setCurrentLanguage] = useState('zh');
+    const { toast } = useToast();
 
     // 处理滚动事件以在滚动时向导航栏添加背景
     useEffect(() => {
@@ -66,6 +70,17 @@ export function Navbar() {
 
     // 设置语言
     const changeLanguage = (code: string) => {
+        if (code !== 'zh') {
+            // 非中文语言显示提示
+            toast({
+                title: languages.find(lang => lang.code === code)?.name,
+                description: comingSoonMessages[code as keyof typeof comingSoonMessages] || "此语言版本即将推出，敬请期待！",
+                duration: 3000,
+                variant: "default",
+            });
+            return;
+        }
+        
         setCurrentLanguage(code);
         // 这里可以添加实际的语言切换逻辑
     };

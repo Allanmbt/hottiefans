@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Analytics } from "@/components/Analytics";
+import { Toaster } from "@/components/ui/toaster";
 import { Montserrat, Inter } from "next/font/google";
 
 // 只保留两种更常用的字体，减少构建失败的风险
@@ -44,6 +45,7 @@ export default function RootLayout({
         </ThemeProvider>
         {/* 网站跟踪调用 */}
         <Analytics />
+        <Toaster />
       </body>
     </html>
   );
