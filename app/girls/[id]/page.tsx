@@ -13,6 +13,7 @@ import { GallerySlider } from '@/components/GallerySlider';
 import { Girl } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import { CustomerServiceDialog } from '@/components/CustomerServiceDialog';
+import Image from 'next/image';
 
 interface AlbumItem {
   id: string;
@@ -371,6 +372,17 @@ export default function GirlDetailPage({ params }: { params: { id: string } }) {
                   <p className="text-sm text-muted-foreground">{selectedServiceDesc}</p>
                 </div>
                 
+                {/* 支付方式图片 */}
+                <div className="rounded-lg overflow-hidden mt-4 mb-2">
+                  <Image
+                    src="/images/payway.jpg"
+                    alt="支付方式"
+                    width={1000}
+                    height={200}
+                    className="w-full object-contain"
+                  />
+                </div>
+                
                 {/* 预约按钮 */}
                 <Button 
                   onClick={handleOpenContactForm}
@@ -412,6 +424,17 @@ export default function GirlDetailPage({ params }: { params: { id: string } }) {
                   <p className="text-muted-foreground">
                     Hottie Girl抵达后取消将扣除定金1000，剩余返还余额。
                   </p>
+                </div>
+                
+                {/* 支付方式图片 */}
+                <div className="rounded-lg overflow-hidden mt-6">
+                  <Image
+                    src="/images/payway.jpg"
+                    alt="支付方式"
+                    width={1000}
+                    height={200}
+                    className="w-full object-contain"
+                  />
                 </div>
                 
                 {/* 预约按钮 */}
