@@ -66,25 +66,26 @@ export async function getGirls(options: {
         // 排序
         switch (sortBy) {
             case 'recommended':
-                // 获取当前日期作为种子
-                const today = new Date();
-                const dateSeed = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+                // 使用浏览量排序代替随机排序
+                query = query.order('browser_count', { ascending: false });
                 
-                // 使用数据库内置的随机排序功能，但使用日期作为种子
-                // 注意: 这里使用PostgreSQL的random()函数，但加上了种子参数
-                // 这样同一天内的种子相同，排序结果相同
-                query = query.order('id', { ascending: true });  // 先按ID排序确保一致性
-                
-                // 在客户端对结果进行基于日期种子的排序
                 const { data, error } = await query;
                 
                 if (error) {
                     throw error;
                 }
                 
-                // 使用日期作为随机种子，确保同一天获取相同顺序
-                const shuffled = shuffleArray(data, dateSeed);
-                return shuffled;
+                // 对数据进行验证，确保关键字段存在
+                const validData = data && Array.isArray(data) ? data.filter(item => {
+                    if (!item.id || !item.name) {
+                        console.warn('Invalid girl data found:', item);
+                        return false;
+                    }
+                    return true;
+                }) : [];
+                
+                console.log(`Successfully fetched ${validData.length} girls for recommended sorting`);
+                return validData;
             case 'newest':
                 query = query.order('created_at', { ascending: false });
                 break;
